@@ -1,0 +1,51 @@
+{
+  "id": "IR-Runbook-Phishing-Response",
+  "title": "IR-Runbook-Phishing-Response",
+  "type": "Runbook",
+  "version": "v2.1",
+  "updated": "Jan 15, 2026",
+  "published": "Jan 15, 2026",
+  "status": "Indexed",
+  "owner": "SOC Platform Team",
+  "techniques": ["T1566", "T1566.001", "T1566.002"],
+  "summary": "Standard operating procedure for containing malicious inbound emails, phishing campaigns, attachment weaponization, and credential harvesting landing pages.",
+  "content": "1. Email Ingestion & Fleet Containment\n\n1.1 Tenant-Wide Mail Purge: Execute automated hard-delete search across all Microsoft 365 / Google Workspace inboxes matching the sender envelope, subject regex, or internet message ID.\n\n1.2 Sender & IP Blocking: Block sender domain, source IPv4/IPv6 address, and SPF/DKIM failing infrastructure at the perimeter Secure Email Gateway (SEG).\n\n2. User Impact Assessment\n\n2.1 Audit Clicks and Form Submissions: Correlate URL rewrite logs (Proofpoint, SafeLinks) to determine which corporate users clicked the malicious link and submitted credentials or multi-factor authentication codes.\n\n2.2 Attachment Detonation: Submit malicious attachments (.docm, .iso, .exe, .zip, .html) to the private sandbox to extract secondary payload indicators of compromise (IoCs).\n\n3. Identity & Session Remediation\n\n3.1 Revoke Active User Tokens: Immediately invalidate refresh tokens and active browser sessions (Azure AD / Okta / Ping) for all users who submitted credentials on the phishing site.\n\n3.2 Enforce Password Reset & FIDO2 Re-verification: Force an immediate password change and verify whether rogue MFA devices or authenticator apps were registered by the attacker.",
+  "steps": [
+    {
+      "id": "phish-step-1",
+      "phase": "IMMEDIATE — DO NOW",
+      "title": "Purge phishing email from all recipient inboxes",
+      "description": "Trigger an enterprise compliance search and hard-delete the phishing email across all recipient mailboxes to prevent further user interaction.",
+      "citation": "IR-Runbook-Phishing-Response §1.1",
+      "techniques": ["T1566", "T1566.001"],
+      "keywords": ["phishing", "email", "purge", "mailbox", "delete", "recipient", "attachment", "campaign", "spoof"]
+    },
+    {
+      "id": "phish-step-2",
+      "phase": "IMMEDIATE — DO NOW",
+      "title": "Block sender address, domain, and sending MTA at mail gateway",
+      "description": "Add the sender domain and originating mail server IP address to perimeter blocklists to prevent follow-up delivery waves.",
+      "citation": "IR-Runbook-Phishing-Response §1.2",
+      "techniques": ["T1566"],
+      "keywords": ["block", "sender", "ip", "gateway", "seg", "domain", "firewall", "mail"]
+    },
+    {
+      "id": "phish-step-3",
+      "phase": "INVESTIGATE",
+      "title": "Audit gateway link click telemetry and sandbox attachments",
+      "description": "Correlate email gateway URL click logs to identify users who opened the link or downloaded attachments, and extract C2 indicators from sandbox detonations.",
+      "citation": "IR-Runbook-Phishing-Response §2.1",
+      "techniques": ["T1566.002"],
+      "keywords": ["clicks", "attachment", "sandbox", "audit", "telemetry", "safelinks", "proofpoint"]
+    },
+    {
+      "id": "phish-step-4",
+      "phase": "RECOVER",
+      "title": "Revoke active identity sessions and rotate credentials for impacted users",
+      "description": "Invalidate active OAuth refresh tokens and Azure AD/Okta sessions for users who submitted credentials, and enforce password rotation with MFA verification.",
+      "citation": "IR-Runbook-Phishing-Response §3.1",
+      "techniques": ["T1566", "T1078"],
+      "keywords": ["revoke", "sessions", "tokens", "password reset", "mfa", "azure ad", "okta", "credentials"]
+    }
+  ]
+}
