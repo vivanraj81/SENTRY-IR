@@ -1,0 +1,25 @@
+{
+  "id": "Legacy-IR-Playbook-2024",
+  "title": "Legacy-IR-Playbook-2024",
+  "type": "Runbook",
+  "version": "v1.4",
+  "updated": "Mar 2, 2024",
+  "published": "Mar 2, 2024",
+  "status": "Stale",
+  "flagged": true,
+  "owner": "SOC Operations",
+  "techniques": ["T1003"],
+  "summary": "Deprecated legacy incident response procedure for workstation credential compromise. Outdated containment window and instructions.",
+  "content": "Isolate the host within 30 minutes and power down if isolation is not possible within that window. Analysts may reboot endpoints to flush running malware if containment fails.",
+  "steps": [
+    {
+      "id": "legacy-step-1",
+      "phase": "IMMEDIATE — DO NOW",
+      "title": "Isolate host within 30 minutes and power down if needed",
+      "description": "Isolate the host within 30 minutes and power down if isolation is not possible within that window.",
+      "citation": "Legacy-IR-Playbook-2024 §2.1",
+      "techniques": ["T1003"],
+      "keywords": ["isolate", "30 minutes", "power down", "reboot", "credential", "legacy"]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "CISA-AA23-347A-Ransomware",
+  "title": "CISA-AA23-347A-Ransomware-Response",
+  "type": "Advisory",
+  "version": "v2.0",
+  "updated": "Dec 18, 2025",
+  "published": "Dec 18, 2025",
+  "status": "Indexed",
+  "owner": "CISA / FBI / MS-ISAC",
+  "techniques": ["T1486", "T1489", "T1490"],
+  "summary": "Joint cybersecurity advisory on immediate containment, eradication, and recovery procedures for ransomware infections.",
+  "content": "1. Immediate Actions Following Ransomware Detection\n\n1.1 Endpoint Isolation: Immediately isolate affected devices from the local area network, Wi-Fi, and storage networks to halt lateral encryption propagation. Disable unauthenticated network sharing and disable SMB protocols on edge switches.\n\n1.2 Power Down Offline Backup Repositories: Disconnect and power down secondary backup stores that have not yet exhibited encryption indicators. Verify air-gapped snapshots before adversary operators locate storage credentials.\n\n2. Forensic Triage & Investigation\n\n2.1 Identify Initial Foothold: Review perimeter VPN logs, external RDP access events, and email gateway attachment execution timestamps to identify the patient zero host.\n\n2.2 Command Line Auditing: Inspect PowerShell and CMD logs for volume shadow copy deletion commands: vssadmin.exe Delete Shadows /All /Quiet and bcdedit /set {default} recoveryenabled No.\n\n3. Recovery Procedures\n\n3.1 Clean System Restoration: Re-image compromised endpoints from known-clean golden images before restoring business data from immutable backups. Never restore from backups made after the confirmed dwell time window without thorough offline AV scanning.",
+  "steps": [
+    {
+      "id": "ransom-step-1",
+      "phase": "IMMEDIATE — DO NOW",
+      "title": "Physically isolate infected hosts from LAN and SAN",
+      "description": "Disconnect network cables and disable wireless interfaces immediately on hosts exhibiting ransomware or mass file renaming activity to stop lateral spread.",
+      "citation": "CISA-AA23-347A §1.1",
+      "techniques": ["T1486", "T1489"],
+      "keywords": ["ransomware", "encrypt", "isolate", "lan", "san", "network", "disconnect", "spread", "infection"]
+    },
+    {
+      "id": "ransom-step-2",
+      "phase": "IMMEDIATE — DO NOW",
+      "title": "Secure and air-gap backup storage",
+      "description": "Sever network connections to online backup repositories and immutable storage pools immediately to prevent encryption or wiper activity targeting recovery points.",
+      "citation": "CISA-AA23-347A §1.2",
+      "techniques": ["T1490"],
+      "keywords": ["backup", "air-gap", "storage", "snapshots", "offline", "wiper", "ransomware", "recovery"]
+    },
+    {
+      "id": "ransom-step-3",
+      "phase": "INVESTIGATE",
+      "title": "Audit shadow copy deletion and recovery tampering commands",
+      "description": "Inspect process execution telemetry for vssadmin.exe, wmic shadowcopy delete, and bcdedit commands used to inhibit system recovery.",
+      "citation": "CISA-AA23-347A §2.2",
+      "techniques": ["T1490"],
+      "keywords": ["vssadmin", "shadow copy", "bcdedit", "recoveryenabled", "cmd", "powershell", "ransomware"]
+    },
+    {
+      "id": "ransom-step-4",
+      "phase": "RECOVER",
+      "title": "Rebuild endpoints and restore from verified offline backups",
+      "description": "Re-image infected machines from known-clean images and restore data only from immutable, verified clean backups taken prior to adversary dwell time.",
+      "citation": "CISA-AA23-347A §3.1",
+      "techniques": ["T1486"],
+      "keywords": ["rebuild", "re-image", "restore", "clean", "backup", "recovery", "immutable"]
+    }
+  ]
+}
