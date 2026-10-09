@@ -1,35 +1,43 @@
-import React from 'react';
+import { Clock3, Cpu, Monitor } from 'lucide-react';
+import SeverityBadge from './SeverityBadge';
 
-export default function AlertBanner({ title, metadata, tag, severity = 'critical' }) {
-  const isCritical = severity.toLowerCase() === 'critical';
-  
+function formatUtc(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date);
+}
+
+export default function AlertBanner({ title, metadata = {}, tag, severity = 'low' }) {
   return (
-    <div className={`border rounded-md mb-6 ${isCritical ? 'border-critical/30 bg-critical/5' : 'border-warning/30 bg-warning/5'}`}>
-      <div className={`px-4 py-2 border-b ${isCritical ? 'border-critical/20' : 'border-warning/20'} flex items-center gap-3`}>
-        <div className={`w-2 h-2 rounded-full ${isCritical ? 'bg-critical' : 'bg-warning animate-pulse'}`}></div>
-        <span className={`text-xs font-bold tracking-wider uppercase ${isCritical ? 'text-critical' : 'text-warning'}`}>
-          {isCritical ? 'CRITICAL' : 'WARNING'}
-        </span>
-      </div>
-      <div className="p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold mb-2">{title}</h2>
-          {metadata && (
-            <div className="flex flex-wrap gap-4 text-sm font-mono text-secondary">
-              {Object.entries(metadata).map(([key, value]) => (
-                <div key={key}>
-                  <span className="text-muted">{key}:</span> <span className="text-primary">{value}</span>
-                </div>
-              ))}
-            </div>
-          )}
+    <section className="mb-6 rounded-xl border border-border bg-panel p-4 sm:p-5">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <SeverityBadge severity={severity} />
+            <h1 className="break-words text-lg font-semibold leading-6 text-primary">{title}</h1>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 font-mono text-xs text-secondary">
+            <span className="inline-flex items-center gap-1.5"><Monitor size={13} className="text-muted" /> host: {metadata.host || '—'}</span>
+            <span className="inline-flex items-center gap-1.5"><Cpu size={13} className="text-muted" /> proc: {metadata.proc || '—'}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock3 size={13} className="text-muted" /> detected: {formatUtc(metadata.detected)} UTC</span>
+          </div>
         </div>
         {tag && (
-          <div className="px-3 py-1 bg-panel border border-border rounded font-mono text-xs text-secondary whitespace-nowrap">
+          <span className="w-fit shrink-0 rounded-md border border-accent/25 bg-accent/10 px-3 py-2 font-mono text-xs text-accent">
             {tag}
-          </div>
+          </span>
         )}
       </div>
-    </div>
+    </section>
   );
 }
