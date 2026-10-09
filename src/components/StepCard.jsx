@@ -1,35 +1,43 @@
-import React, { useState } from 'react';
-import { Check } from 'lucide-react';
+import { RotateCcw, SearchCheck, ShieldCheck } from 'lucide-react';
 import CitationChip from './CitationChip';
 
-export default function StepCard({ step }) {
-  const [completed, setCompleted] = useState(false);
+const PHASE_STYLES = {
+  immediate: {
+    icon: ShieldCheck,
+    number: 'border-critical/30 bg-critical/10 text-critical',
+    iconColor: 'text-critical',
+  },
+  investigate: {
+    icon: SearchCheck,
+    number: 'border-warning/30 bg-warning/10 text-warning',
+    iconColor: 'text-warning',
+  },
+  recover: {
+    icon: RotateCcw,
+    number: 'border-success/30 bg-success/10 text-success',
+    iconColor: 'text-success',
+  },
+};
+
+export default function StepCard({ step, number, onOpenCitation }) {
+  const style = PHASE_STYLES[step.phase] || PHASE_STYLES.investigate;
+  const PhaseIcon = style.icon;
 
   return (
-    <div className={`relative p-5 rounded-md border transition-all duration-200 ${completed ? 'bg-panel/50 border-success/30 opacity-70' : 'bg-panel border-border hover:border-accent/40'}`}>
-      <div className="flex gap-4">
-        <div className="pt-1">
-          <button 
-            onClick={() => setCompleted(!completed)}
-            className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${completed ? 'bg-success border-success' : 'bg-panel-alt border-muted hover:border-accent'}`}
-          >
-            {completed && <Check size={14} className="text-white" strokeWidth={3} />}
-          </button>
+    <article className="rounded-lg border border-border bg-panel p-4 transition-colors hover:border-accent/40 sm:p-5">
+      <div className="flex gap-3.5">
+        <div className="flex shrink-0 flex-col items-center gap-2">
+          <span className={`flex h-8 w-8 items-center justify-center rounded-full border font-mono text-xs font-bold ${style.number}`}>
+            {number}
+          </span>
+          <PhaseIcon size={15} className={style.iconColor} />
         </div>
-        
-        <div className="flex-1">
-          <h4 className={`text-base font-bold mb-2 ${completed ? 'text-secondary line-through decoration-muted' : 'text-primary'}`}>
-            {step.title}
-          </h4>
-          <p className="text-sm text-secondary mb-4 whitespace-pre-wrap leading-relaxed">
-            {step.description}
-          </p>
-          
-          <div className="flex items-center gap-3">
-            <CitationChip citation={step.citation} to={`/document/${step.docId}`} />
-          </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-2 text-[15px] font-semibold leading-5 text-primary">{step.title}</h3>
+          <p className="mb-4 whitespace-pre-wrap text-sm leading-6 text-secondary">{step.description}</p>
+          <CitationChip citation={step.citation} onClick={() => onOpenCitation?.(step.citation)} />
         </div>
       </div>
-    </div>
+    </article>
   );
 }

@@ -1,92 +1,154 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, ClipboardPaste, MessageSquareText } from 'lucide-react';
 import Button from '../components/Button';
-import { mockAlerts } from '../data/mockAlerts';
+import { parseAlert, retrieveMitigation, getDocuments, normalizeRetrieval } from '../api';
+
+const SAMPLES = [
+  {
+    label: 'Suspicious LSASS Access',
+    raw: '{"detection":"Suspicious LSASS Access","host":"FIN-WS-07","process":"rundll32.exe","rule":"Sigma_T1003_001"}',
+  },
+  {
+    label: 'Encoded PowerShell Command',
+    raw: '{"detection":"Encoded PowerShell Command","host":"FIN-WS-07","process":"powershell.exe","rule":"Sigma_T1059_001"}',
+  },
+  {
+    label: 'Outbound SMB to rare IP',
+    raw: '{"detection":"Outbound SMB to rare IP","host":"FIN-WS-07","process":"System","rule":"Sigma_T1021_002"}',
+  },
+];
+
+const PLACEHOLDER = `{
+  "detection": "Suspicious LSASS Access",
+  "host": "FIN-WS-07",
+  "process": "rundll32.exe",
+  "rule": "Sigma_T1003_001"
+}`;
 
 export default function SearchPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('paste');
   const [inputText, setInputText] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRetrieve = () => {
-    if (!inputText.trim()) return;
-    
-    // Find if the pasted text matches any of our mock alerts
-    const matchedAlert = mockAlerts.find(a => a.raw === inputText);
-    
-    if (matchedAlert) {
-      // Store in session storage to pass to confirm page
-      sessionStorage.setItem('currentAlertId', matchedAlert.id);
-    } else {
-      // Create a dummy alert for unknown text
-      sessionStorage.setItem('currentAlertId', 'alert-1'); // Fallback to alert-1
+  async function handleRetrieve(event) {
+    event.preventDefault();
+    if (!inputText.trim()) {
+      setError('Enter an alert or question before continuing.');
+      return;
     }
-    
-    navigate('/confirm');
-  };
+
+    setError('');
+    setLoading(true);
+    try {
+      if (activeTab === 'paste') {
+        const extracted = await parseAlert(inputText);
+        navigate('/confirm', {
+          state: { rawAlert: inputText, entities: extracted },
+        });
+      } else {
+        const [retrieved, documents] = await Promise.all([
+          retrieveMitigation({ question: inputText.trim() }),
+          getDocuments(),
+        ]);
+        navigate('/results', {
+          state: {
+            retrieval: normalizeRetrieval(retrieved, documents),
+            alertId: `alert-${Date.now()}`,
+            alert: {
+              ...retrieved.alert,
+              detection: inputText.trim(),
+              timestamp: '',
+            },
+          },
+        });
+      }
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to retrieve mitigation.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-4xl mx-auto w-full">
-      <div className="text-center mb-12">
-        <h1 className="text-[26px] font-bold mb-4">Find the exact mitigation step</h1>
-        <p className="text-[18px] font-semibold text-secondary max-w-2xl mx-auto">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-6 py-12">
+      <div className="mb-9 text-center">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-semibold tracking-wide text-accent">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          INCIDENT RESPONSE WORKSPACE
+        </div>
+        <h1 className="mb-3 text-[26px] font-bold leading-tight">Find the exact mitigation step</h1>
+        <p className="mx-auto max-w-2xl text-sm leading-6 text-secondary">
           Paste a raw alert or ask in plain language — SENTRY-IR retrieves the step, not the whole document.
         </p>
       </div>
 
-      <div className="w-full mb-8">
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex bg-panel rounded-md p-1 border border-border">
-            <button
-              className={`px-6 py-2 text-sm font-semibold rounded ${activeTab === 'paste' ? 'bg-panel-alt text-primary shadow-sm' : 'text-secondary hover:text-primary'}`}
-              onClick={() => setActiveTab('paste')}
-            >
-              Paste Alert
-            </button>
-            <button
-              className={`px-6 py-2 text-sm font-semibold rounded ${activeTab === 'ask' ? 'bg-panel-alt text-primary shadow-sm' : 'text-secondary hover:text-primary'}`}
-              onClick={() => setActiveTab('ask')}
-            >
-              Ask a Question
-            </button>
-          </div>
+      <form onSubmit={handleRetrieve} className="rounded-xl border border-border bg-panel p-5 shadow-2xl shadow-black/10 sm:p-7">
+        <div className="mb-5 flex w-fit rounded-lg border border-border bg-background p-1">
+          <button
+            type="button"
+            onClick={() => { setActiveTab('paste'); setError(''); }}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'paste' ? 'bg-panel-alt text-primary' : 'text-secondary hover:text-primary'}`}
+          >
+            <ClipboardPaste size={15} /> Paste Alert
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('ask'); setError(''); }}
+            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'ask' ? 'bg-panel-alt text-primary' : 'text-secondary hover:text-primary'}`}
+          >
+            <MessageSquareText size={15} /> Ask a Question
+          </button>
         </div>
 
-        <div className="relative">
-          <textarea
-            className="w-full h-64 bg-panel border border-border rounded-md p-6 font-mono text-[13px] text-primary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent resize-none placeholder-muted"
-            placeholder={activeTab === 'paste' ? '{\n  "detection": "Suspicious LSASS Access",\n  "host": "FIN-WS-07",\n  "process": "rundll32.exe",\n  "rule": "Sigma_T1003_001"\n}' : 'e.g., How do I isolate a host after LSASS dumping?'}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-          ></textarea>
-        </div>
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted" htmlFor="alert-input">
+          {activeTab === 'paste' ? 'Raw alert payload' : 'Incident question'}
+        </label>
+        <textarea
+          id="alert-input"
+          className="min-h-56 w-full resize-y rounded-lg border border-border bg-background p-4 font-mono text-[13px] leading-6 text-primary placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+          placeholder={activeTab === 'paste' ? PLACEHOLDER : 'e.g. How should I contain a host after LSASS credential dumping?'}
+          value={inputText}
+          onChange={(event) => { setInputText(event.target.value); setError(''); }}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? 'search-error' : undefined}
+        />
+        {error && <p id="search-error" role="alert" className="mt-3 text-sm text-critical">{error}</p>}
 
-        <div className="mt-6 flex justify-center">
-          <Button onClick={handleRetrieve} className="px-8 py-3 text-[16px]">
-            Retrieve Mitigation
+        <div className="mt-5 flex flex-col items-center justify-between gap-4 border-t border-border pt-5 sm:flex-row">
+          <p className="text-xs text-muted">Local keyword retrieval · results cite indexed response guidance</p>
+          <Button type="submit" disabled={loading} className="w-full gap-2 px-6 py-3 sm:w-auto">
+            {loading ? 'Searching knowledge base…' : <>Retrieve Mitigation <ArrowRight size={16} /></>}
           </Button>
         </div>
-      </div>
+        {loading && (
+          <div aria-label="Searching the knowledge base" className="mt-4 animate-pulse space-y-2">
+            <div className="h-2.5 w-3/4 rounded bg-panel-alt" />
+            <div className="h-2.5 w-1/2 rounded bg-panel-alt" />
+          </div>
+        )}
+      </form>
 
-      <div className="w-full pt-8 border-t border-border">
-        <h3 className="text-[12px] font-bold text-muted tracking-wider uppercase mb-4">RECENT / SAMPLE ALERTS</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mockAlerts.map((alert) => (
+      <section className="mt-8" aria-labelledby="sample-alerts-heading">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 id="sample-alerts-heading" className="text-xs font-bold tracking-[0.14em] text-muted">RECENT / SAMPLE ALERTS</h2>
+          <span className="text-xs text-muted">Select to populate</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SAMPLES.map((sample) => (
             <button
-              key={alert.id}
-              onClick={() => setInputText(alert.raw)}
-              className="flex flex-col items-start p-4 bg-panel rounded-md border border-border hover:border-accent/50 transition-colors text-left"
+              key={sample.label}
+              type="button"
+              onClick={() => { setActiveTab('paste'); setInputText(sample.raw); setError(''); }}
+              className="rounded-full border border-border bg-panel px-3.5 py-2 text-sm text-secondary transition-colors hover:border-accent/60 hover:text-primary"
             >
-              <span className="font-semibold text-sm mb-2">{alert.detection}</span>
-              <div className="text-[12px] font-mono text-secondary flex items-center gap-2">
-                <span>{alert.host}</span>
-                <span className="text-muted">•</span>
-                <span>{alert.techniqueId}</span>
-              </div>
+              {sample.label}
             </button>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

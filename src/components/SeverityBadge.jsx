@@ -1,7 +1,8 @@
 import React from 'react';
 
 export default function SeverityBadge({ severity }) {
-  const normalized = severity.toLowerCase();
+  const label = severity || 'Unknown';
+  const normalized = label.toLowerCase();
   
   let colorClass = '';
   switch (normalized) {
@@ -26,7 +27,7 @@ export default function SeverityBadge({ severity }) {
 
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide border ${colorClass}`}>
-      {severity}
+      {label}
     </span>
   );
 }
