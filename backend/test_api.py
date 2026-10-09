@@ -44,8 +44,12 @@ class TestFastAPIBackend(unittest.TestCase):
         schema = res.json()
         paths = schema.get("paths", {})
         self.assertIn("/api/search", paths)
+        self.assertIn("/api/retrieve", paths)
+        self.assertIn("/api/parse", paths)
         self.assertIn("/api/documents", paths)
         self.assertIn("/api/documents/{doc_id}", paths)
+        self.assertIn("/api/documents/{doc_id}/sections/{section}", paths)
+        self.assertIn("/api/kb/stats", paths)
 
     def test_1_search_success(self):
         """TEST 1 — Search success with credential dumping query."""
@@ -111,18 +115,19 @@ class TestFastAPIBackend(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
         data = res.json()
-        self.assertIn("documents", data)
-        self.assertEqual(len(data["documents"]), len(kb_repo.get_all_documents()))
-        self.assertEqual(data["total"], len(kb_repo.get_all_documents()))
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), len(kb_repo.get_all_documents()))
 
         # Check required fields on documents
-        doc_ids = [d["id"] for d in data["documents"]]
+        doc_ids = [d["id"] for d in data]
         self.assertIn("IR-Runbook-Credential-Theft", doc_ids)
         self.assertIn("CISA-AA23-347A-Ransomware", doc_ids)
+        self.assertIn("IR-Runbook-Brute-Force", doc_ids)
+        self.assertIn("IR-Runbook-Scheduled-Task-Persistence", doc_ids)
         self.assertNotIn("IR-Playbook-DNS-Tunneling", doc_ids)
 
-        first = data["documents"][0]
-        for field in ["id", "title", "type", "version", "chunks", "status"]:
+        first = data[0]
+        for field in ["id", "name", "type", "version", "date", "chunks", "status", "owner"]:
             self.assertIn(field, first)
 
     def test_5_existing_document(self):
@@ -133,10 +138,8 @@ class TestFastAPIBackend(unittest.TestCase):
 
         data = res.json()
         self.assertEqual(data["id"], doc_id)
-        self.assertEqual(data["title"], "IR-Runbook-Credential-Theft")
-        self.assertTrue(len(data["content"]) > 0)
-        self.assertIn("steps", data)
-        self.assertGreater(len(data["steps"]), 0)
+        self.assertEqual(data["name"], "IR-Runbook-Credential-Theft")
+        self.assertTrue(len(data["text"]) > 0)
 
     def test_6_missing_document(self):
         """TEST 6 — GET /api/documents/does-not-exist returns HTTP 404."""
