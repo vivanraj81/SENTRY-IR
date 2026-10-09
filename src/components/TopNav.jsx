@@ -13,7 +13,7 @@ export default function TopNav() {
       </Link>
       
       <div className="flex items-center gap-4 sm:gap-6">
-        <Link to="/knowledge-base" className="text-sm font-semibold text-secondary transition-colors hover:text-primary">
+        <Link to="/admin" className="text-sm font-semibold text-secondary transition-colors hover:text-primary">
           Knowledge Base
         </Link>
         <div className="flex items-center gap-2 border-l border-border pl-6">
