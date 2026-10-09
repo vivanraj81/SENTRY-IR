@@ -21,11 +21,24 @@ This application is built with a focused, dark "enterprise SOC investigation con
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Routing**: [React Router](https://reactrouter.com/)
 
-*(Note: This is a frontend-only demonstration utilizing local mock data. It does not integrate with a real SIEM, database, or AI API.)*
+The application includes a FastAPI backend for searching the local knowledge base and retrieving its documents. It does not integrate with a real SIEM, external database, or AI API.
 
 ## Getting Started
 
-To run the application locally:
+### Backend
+
+From the repository root, install the Python dependencies and start the API:
+
+```bash
+python -m pip install fastapi uvicorn
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+The API is available at `http://127.0.0.1:8000`. Interactive API documentation is at `http://127.0.0.1:8000/docs`.
+
+### Frontend
+
+In a separate terminal, from the repository root:
 
 1. Install dependencies:
    ```bash
