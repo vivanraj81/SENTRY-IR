@@ -4,8 +4,6 @@ import SearchPage from './pages/SearchPage';
 import ConfirmPage from './pages/ConfirmPage';
 import ResultsPage from './pages/ResultsPage';
 import NoResultPage from './pages/NoResultPage';
-import ConflictPage from './pages/ConflictPage';
-import DocumentDetailPage from './pages/DocumentDetailPage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
 
 function App() {
@@ -19,8 +17,7 @@ function App() {
             <Route path="/confirm" element={<ConfirmPage />} />
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/no-result" element={<NoResultPage />} />
-            <Route path="/conflict" element={<ConflictPage />} />
-            <Route path="/document/:id" element={<DocumentDetailPage />} />
+            <Route path="/admin" element={<KnowledgeBasePage />} />
             <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
           </Routes>
         </main>

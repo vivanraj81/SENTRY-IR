@@ -5,6 +5,7 @@ Exposes security search and knowledge base endpoints for the React frontend.
 
 import io
 import json
+import os
 import re
 import sys
 import time
@@ -16,6 +17,7 @@ from zipfile import BadZipFile
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
+DIST_DIR = REPO_ROOT / "dist"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
@@ -23,6 +25,7 @@ from docx import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -72,7 +75,10 @@ app.add_middleware(
 
 @app.get("/", tags=["System"])
 def root():
-    """Health and status check endpoint."""
+    """Serve the built UI in production, or expose local API health."""
+    index_file = DIST_DIR / "index.html"
+    if _frontend_serving_enabled() and index_file.is_file():
+        return FileResponse(index_file)
     return {
         "app": "SENTRY-IR API",
         "version": "1.0.0",
@@ -507,6 +513,33 @@ def get_document(doc_id: str) -> dict:
         "owner": doc.owner,
         "text": doc.content,
     }
+
+
+@app.get("/{frontend_path:path}", include_in_schema=False)
+def serve_frontend(frontend_path: str):
+    if frontend_path == "api" or frontend_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    if not _frontend_serving_enabled():
+        raise HTTPException(status_code=404, detail="Frontend serving is disabled")
+
+    index_file = DIST_DIR / "index.html"
+    if not index_file.is_file():
+        raise HTTPException(status_code=404, detail="Frontend build not found")
+
+    build_root = DIST_DIR.resolve()
+    requested_file = (DIST_DIR / frontend_path).resolve()
+    try:
+        requested_file.relative_to(build_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="File not found") from exc
+
+    if requested_file.is_file():
+        return FileResponse(requested_file)
+    return FileResponse(index_file)
+
+
+def _frontend_serving_enabled() -> bool:
+    return bool(os.environ.get("PORT")) or os.environ.get("SENTRY_SERVE_FRONTEND") == "1"
 
 
 if __name__ == "__main__":

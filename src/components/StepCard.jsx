@@ -2,15 +2,18 @@ import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import CitationChip from './CitationChip';
 
-export default function StepCard({ step }) {
+export default function StepCard({ step, number, onOpenCitation }) {
   const [completed, setCompleted] = useState(false);
 
   return (
     <div className={`relative p-5 rounded-md border transition-all duration-200 ${completed ? 'bg-panel/50 border-success/30 opacity-70' : 'bg-panel border-border hover:border-accent/40'}`}>
       <div className="flex gap-4">
-        <div className="pt-1">
+        <div className="flex shrink-0 flex-col items-center gap-2 pt-0.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-accent/30 bg-accent/10 font-mono text-xs font-bold text-accent">{number}</span>
           <button 
+            type="button"
             onClick={() => setCompleted(!completed)}
+            aria-label={completed ? 'Mark step incomplete' : 'Mark step complete'}
             className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${completed ? 'bg-success border-success' : 'bg-panel-alt border-muted hover:border-accent'}`}
           >
             {completed && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -26,7 +29,7 @@ export default function StepCard({ step }) {
           </p>
           
           <div className="flex items-center gap-3">
-            <CitationChip citation={step.citation} to={`/document/${step.docId}`} />
+            <CitationChip citation={step.citation} onClick={onOpenCitation} />
           </div>
         </div>
       </div>

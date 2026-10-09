@@ -1,24 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
 import { FileText } from 'lucide-react';
 
-export default function CitationChip({ citation, to }) {
-  if (to) {
+export default function CitationChip({ citation, onClick }) {
+  const label = typeof citation === 'string'
+    ? citation
+    : [citation?.docName, citation?.section && `§${citation.section}`].filter(Boolean).join(' ');
+
+  if (onClick) {
     return (
-      <Link 
-        to={to}
-        className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-panel-alt border border-border text-[11px] font-mono text-secondary hover:text-accent hover:border-accent/50 transition-colors"
+      <button
+        type="button"
+        onClick={() => onClick(citation)}
+        className="inline-flex items-center gap-1.5 rounded bg-panel-alt border border-border px-2 py-1 text-left text-[11px] font-mono text-secondary transition-colors hover:border-accent/50 hover:text-accent"
       >
         <FileText size={12} />
-        {citation}
-      </Link>
+        {label || 'Source'}
+      </button>
     );
   }
 
   return (
     <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-panel-alt border border-border text-[11px] font-mono text-secondary">
       <FileText size={12} />
-      {citation}
+      {label || 'Source'}
     </span>
   );
 }

@@ -1,187 +1,165 @@
-import React, { useState } from 'react';
-import { Upload, X, File, FileText } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FileText, RefreshCw, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import MetricCard from '../components/MetricCard';
-import { mockDocuments as initialDocs } from '../data/mockDocuments';
+import { getDocuments, getKnowledgeBaseStats, uploadDocument } from '../api';
+
+function loadKnowledgeBase() {
+  return Promise.all([getDocuments(), getKnowledgeBaseStats()]);
+}
 
 export default function KnowledgeBasePage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [documents, setDocuments] = useState(initialDocs);
+  const fileInput = useRef(null);
+  const [documents, setDocuments] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleUpload = (newDoc) => {
-    setDocuments(prev => [newDoc, ...prev]);
-    setIsModalOpen(false);
-    
-    // Simulate parsing delay
-    setTimeout(() => {
-      setDocuments(prev => prev.map(d => 
-        d.id === newDoc.id ? { ...d, status: 'Indexed', chunks: 12 } : d
-      ));
-    }, 2000);
-  };
+  async function refresh() {
+    try {
+      const [documentList, currentStats] = await loadKnowledgeBase();
+      setDocuments(documentList);
+      setStats(currentStats);
+    } catch (requestError) {
+      setError(requestError.message || 'Could not load the knowledge base.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    loadKnowledgeBase()
+      .then(([documentList, currentStats]) => {
+        if (!active) return;
+        setDocuments(documentList);
+        setStats(currentStats);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError.message || 'Could not load the knowledge base.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  async function handleUpload(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploading(true);
+    setSuccess('');
+    setError('');
+    try {
+      await uploadDocument(file);
+      setSuccess(`${file.name} was indexed successfully.`);
+      await refresh();
+    } catch (requestError) {
+      setError(requestError.message || 'Could not upload the document.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
-    <div className="flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+    <div className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 lg:px-8">
+      <header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-[26px] font-bold mb-2">Knowledge Base</h1>
-          <p className="text-secondary font-semibold">Ingested documents, parsing status, and feed sync</p>
+          <p className="mb-2 text-xs font-bold tracking-[0.14em] text-accent">KNOWLEDGE OPERATIONS</p>
+          <h1 className="mb-2 text-[26px] font-bold">Knowledge Base</h1>
+          <p className="text-sm text-secondary">Ingested documents, parsing status, and feed sync</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
-          <Upload size={16} />
-          Upload Document
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        <MetricCard label="DOCUMENTS" value={184} subtext="runbooks, advisories, threat intel" />
-        <MetricCard label="CHUNKS INDEXED" value="6,412" subtext="step-level + product-level" />
-        <MetricCard label="CVE FEED SYNC" value="12m ago" subtext="NVD · auto-sync every 30m" />
-        <MetricCard label="PARSING QUEUE" value={documents.filter(d => d.status === 'Parsing').length} subtext="ETA ~2 min" />
-      </div>
-
-      <div className="bg-panel border border-border rounded-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-panel-alt">
-                <th className="py-4 px-6 text-xs font-bold text-muted uppercase tracking-wider w-1/2">DOCUMENT</th>
-                <th className="py-4 px-6 text-xs font-bold text-muted uppercase tracking-wider">TYPE</th>
-                <th className="py-4 px-6 text-xs font-bold text-muted uppercase tracking-wider">CHUNKS</th>
-                <th className="py-4 px-6 text-xs font-bold text-muted uppercase tracking-wider">STATUS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {documents.map((doc, idx) => (
-                <tr key={idx} className="hover:bg-panel-alt/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <FileText size={18} className="text-secondary" />
-                      <span className="font-semibold text-primary">{doc.title}{doc.title.includes('.') ? '' : '.pdf'}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-secondary">{doc.type}</td>
-                  <td className="py-4 px-6 text-sm font-mono text-secondary">{doc.chunks || '—'}</td>
-                  <td className="py-4 px-6">
-                    <StatusBadge status={doc.status} flagged={doc.flagged} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex gap-2">
+          <Button variant="secondary" disabled={loading} onClick={() => { setLoading(true); setError(''); refresh(); }} aria-label="Refresh knowledge base">
+            <RefreshCw size={15} /> Refresh
+          </Button>
+          <Button disabled={uploading} onClick={() => fileInput.current?.click()}>
+            <Upload size={15} /> {uploading ? 'Parsing…' : 'Upload Document'}
+          </Button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".txt,.md,.pdf,.docx"
+            className="hidden"
+            onChange={handleUpload}
+            aria-label="Choose document to upload"
+          />
         </div>
-      </div>
+      </header>
 
-      {isModalOpen && (
-        <UploadModal onClose={() => setIsModalOpen(false)} onUpload={handleUpload} />
+      {error && <p role="alert" className="mb-5 rounded-md border border-critical/30 bg-critical/10 px-4 py-3 text-sm text-critical">{error}</p>}
+      {success && <p role="status" className="mb-5 rounded-md border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">{success}</p>}
+      {uploading && <p role="status" className="mb-5 text-sm text-accent">Parsing and indexing uploaded document…</p>}
+
+      {loading && !stats ? (
+        <div aria-label="Loading knowledge base" className="animate-pulse">
+          <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 rounded-xl border border-border bg-panel" />)}
+          </div>
+          <div className="h-72 rounded-xl border border-border bg-panel" />
+        </div>
+      ) : stats && (
+        <>
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard label="DOCUMENTS" value={stats.documentCount} subtext="Indexed source documents" />
+            <MetricCard label="CHUNKS INDEXED" value={stats.chunksIndexed.toLocaleString()} subtext="Section-level retrieval units" />
+            <MetricCard label="CVE FEED SYNC" value={stats.cveFeedSync} subtext="NVD · auto-sync every 30m (simulated)" />
+            <MetricCard label="PARSING QUEUE" value={stats.parsingQueueCount} subtext={stats.parsingQueueCount ? 'Documents processing' : 'No documents waiting'} />
+          </div>
+
+          <section className="overflow-hidden rounded-xl border border-border bg-panel">
+            <div className="border-b border-border px-5 py-4">
+              <h2 className="text-xs font-bold tracking-[0.14em] text-muted">DOCUMENT INVENTORY</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left">
+                <thead className="bg-panel-alt">
+                  <tr>
+                    {['DOCUMENT', 'TYPE', 'CHUNKS', 'STATUS'].map((label) => (
+                      <th key={label} className="px-5 py-3 text-[10px] font-bold tracking-[0.14em] text-muted">{label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {documents.map((document) => (
+                    <tr key={document.id} className="transition-colors hover:bg-panel-alt/50">
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <FileText size={16} className="shrink-0 text-secondary" />
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-semibold text-primary">{document.title}</p>
+                            <p className="mt-0.5 text-xs text-muted">{document.version || 'Version not specified'}{document.date ? ` · ${document.date}` : ''}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-secondary">{document.type}</td>
+                      <td className="px-5 py-3.5 font-mono text-sm text-secondary">{document.chunks}</td>
+                      <td className="px-5 py-3.5"><DocumentStatus status={document.status} flagged={document.flagged} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!documents.length && <p className="p-8 text-center text-sm text-muted">No documents are indexed yet.</p>}
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
 }
 
-function StatusBadge({ status, flagged }) {
-  if (status === 'Indexed') {
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-success/10 text-success border border-success/20">Indexed</span>;
-  }
-  if (status === 'Parsing') {
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-accent/10 text-accent border border-accent/20 animate-pulse">Parsing</span>;
-  }
-  if (status === 'Stale') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-critical/10 text-critical border border-critical/20">
-        Stale {flagged && '· flagged'}
-      </span>
-    );
-  }
-  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-panel-alt text-secondary border border-border">{status}</span>;
-}
-
-function UploadModal({ onClose, onUpload }) {
-  const [docType, setDocType] = useState('Runbook');
-  const [isDragging, setIsDragging] = useState(false);
-  const [fileName, setFileName] = useState('');
-
-  const handleSimulateUpload = () => {
-    if (!fileName) {
-      setFileName('IR-Runbook-New-Threat.pdf');
-      return;
-    }
-    
-    onUpload({
-      id: `new-doc-${Date.now()}`,
-      title: fileName,
-      type: docType,
-      version: 'v1.0',
-      updated: 'Just now',
-      chunks: 0,
-      status: 'Parsing',
-      owner: 'SOC Analyst',
-      content: 'Pending...'
-    });
-  };
-
+function DocumentStatus({ status, flagged }) {
+  const stale = status?.toLowerCase().includes('stale') || status?.toLowerCase().includes('flagged') || flagged;
+  const parsing = status?.toLowerCase().includes('parsing');
+  const tone = stale ? 'warning' : parsing ? 'neutral' : 'success';
+  const label = stale ? 'Stale — flagged' : parsing ? 'Parsing…' : status || 'Unknown';
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-panel border border-border rounded-lg shadow-xl w-full max-w-md flex flex-col">
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <h2 className="text-lg font-bold">Upload Document</h2>
-          <button onClick={onClose} className="text-secondary hover:text-primary transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-        
-        <div className="p-6">
-          <div className="mb-6">
-            <label className="block text-sm font-bold text-secondary mb-2 uppercase tracking-wider">Document Type</label>
-            <select 
-              value={docType}
-              onChange={(e) => setDocType(e.target.value)}
-              className="w-full bg-panel-alt border border-border rounded-md px-4 py-2 text-sm text-primary focus:outline-none focus:border-accent"
-            >
-              <option>Runbook</option>
-              <option>Advisory</option>
-              <option>Threat Intel</option>
-            </select>
-          </div>
-
-          <div 
-            className={`border-2 border-dashed rounded-lg p-10 flex flex-col items-center justify-center text-center transition-colors ${
-              isDragging ? 'border-accent bg-accent/5' : 'border-border bg-panel-alt/50 hover:bg-panel-alt hover:border-muted'
-            }`}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDragging(false);
-              setFileName(e.dataTransfer.files[0]?.name || 'uploaded-file.pdf');
-            }}
-          >
-            {fileName ? (
-              <div className="flex flex-col items-center gap-2">
-                <File className="text-accent mb-2" size={32} />
-                <span className="text-sm font-semibold text-primary">{fileName}</span>
-                <span className="text-[12px] text-success">Ready to upload</span>
-              </div>
-            ) : (
-              <>
-                <Upload className="text-secondary mb-4" size={32} />
-                <p className="text-sm font-semibold text-primary mb-1">Drag and drop file here</p>
-                <p className="text-[12px] text-secondary mb-4">or click to browse</p>
-                <Button variant="secondary" onClick={() => setFileName('IR-Runbook-New-Threat.pdf')} className="text-[12px] py-1.5 px-3">
-                  Choose File
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="p-5 border-t border-border flex justify-end gap-3 bg-panel-alt/30">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSimulateUpload} disabled={!fileName}>
-            Upload to Index
-          </Button>
-        </div>
-      </div>
-    </div>
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${tone === 'warning' ? 'border-warning/30 bg-warning/10 text-warning' : tone === 'success' ? 'border-success/30 bg-success/10 text-success' : 'animate-pulse border-accent/30 bg-accent/10 text-accent'}`}>
+      {label}
+    </span>
   );
 }

@@ -1,69 +1,63 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { HelpCircle, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle2, HelpCircle } from 'lucide-react';
 import Button from '../components/Button';
-import { mockAlerts } from '../data/mockAlerts';
-import { mockMitigations } from '../data/mockMitigations';
+import { escalateAlert } from '../api';
 
-export default function NoResultPage() {
+export default function NoResultPage({ alert: alertProp }) {
   const navigate = useNavigate();
-  const alertId = sessionStorage.getItem('currentAlertId') || 'alert-2';
-  const alert = mockAlerts.find(a => a.id === alertId) || mockAlerts[1];
-  const mitigation = mockMitigations[alertId];
-  
+  const { state } = useLocation();
+  const alert = alertProp || state?.alert || {};
+  const query = alert.query || alert.detection || alert.alert || 'this alert';
+  const [loading, setLoading] = useState(false);
   const [escalated, setEscalated] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleEscalate = () => {
-    setEscalated(true);
-    setTimeout(() => {
-      setEscalated(false);
-    }, 3000);
-  };
+  async function escalate() {
+    setLoading(true);
+    setError('');
+    try {
+      await escalateAlert({ ...alert, query });
+      setEscalated(true);
+    } catch (requestError) {
+      setError(requestError.message || 'Could not submit escalation.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-2xl mx-auto w-full text-center">
-      <div className="w-20 h-20 rounded-full bg-panel border-4 border-border flex items-center justify-center mb-8 mx-auto text-secondary">
-        <HelpCircle size={40} strokeWidth={1.5} />
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-panel text-secondary">
+        <HelpCircle size={34} strokeWidth={1.6} />
       </div>
-      
-      <h1 className="text-3xl font-bold mb-4">No mitigation found for this alert</h1>
-      
-      <p className="text-[16px] text-secondary mb-12 max-w-lg mx-auto">
-        {mitigation?.message || `The knowledge base has no runbook or advisory matching '${alert.detection}' or its detected technique.`}
+      <h1 className="mb-3 text-2xl font-bold">No mitigation found for this alert</h1>
+      <p className="mb-7 max-w-xl text-sm leading-6 text-secondary">
+        No runbook matches “{query}”{alert.technique ? ` or detected technique ${alert.technique}` : ''}.
       </p>
 
-      <div className="w-full bg-panel border border-border rounded-md p-8 text-left mb-10">
-        <h3 className="text-sm font-bold text-muted uppercase tracking-wider mb-6">SUGGESTED NEXT STEPS</h3>
-        
-        <ul className="space-y-4 text-[15px]">
-          <li className="flex items-start gap-3">
-            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-accent"></div>
-            <span>Escalate to the on-call IR lead for manual triage</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-accent"></div>
-            <span>Search MITRE ATT&CK directly for related techniques</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-accent"></div>
-            <span>Flag this alert type so a runbook can be authored</span>
-          </li>
+      <section className="w-full rounded-xl border border-border bg-panel p-5 text-left">
+        <h2 className="mb-4 text-xs font-bold tracking-[0.14em] text-muted">SUGGESTED NEXT STEPS</h2>
+        <ul className="space-y-3 text-sm text-primary">
+          {[
+            'Escalate to the on-call IR lead for manual triage',
+            'Search MITRE ATT&CK directly for related techniques',
+            'Flag this alert type so a runbook can be authored',
+          ].map((step) => (
+            <li key={step} className="flex items-start gap-3">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+              {step}
+            </li>
+          ))}
         </ul>
-      </div>
+      </section>
 
-      <div className="flex items-center gap-4 justify-center">
-        <Button variant="secondary" onClick={() => navigate('/')}>
-          Try Another Search
-        </Button>
-        <Button onClick={handleEscalate} disabled={escalated} className="w-40">
-          {escalated ? (
-            <span className="flex items-center gap-2">
-              <CheckCircle2 size={16} />
-              Escalated
-            </span>
-          ) : (
-            'Escalate Now'
-          )}
+      {error && <p role="alert" className="mt-4 text-sm text-critical">{error}</p>}
+      {escalated && <p role="status" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-success"><CheckCircle2 size={16} /> Escalation sent to the IR lead.</p>}
+      <div className="mt-6 flex flex-col-reverse justify-center gap-3 sm:flex-row">
+        <Button variant="secondary" onClick={() => navigate('/')}>Try Another Search</Button>
+        <Button variant="danger" disabled={loading || escalated} onClick={escalate}>
+          {loading ? 'Escalating…' : escalated ? 'Escalated' : 'Escalate Now'}
         </Button>
       </div>
     </div>

@@ -11,6 +11,7 @@ export default function Button({
   const variants = {
     primary: "bg-accent hover:bg-blue-500 text-white px-4 py-2",
     secondary: "bg-panel-alt hover:bg-panel border border-border text-primary px-4 py-2",
+    danger: "bg-critical hover:bg-red-600 text-white px-4 py-2",
     critical: "bg-critical hover:bg-red-600 text-white px-4 py-2",
     ghost: "bg-transparent hover:bg-panel-alt border border-transparent hover:border-border text-secondary hover:text-primary px-3 py-1.5",
   };
