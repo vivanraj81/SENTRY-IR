@@ -4,16 +4,16 @@ import { CircleUserRound } from 'lucide-react';
 export default function TopNav() {
   return (
     <header className="h-16 flex items-center justify-between px-6 bg-panel border-b border-border">
-      <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-        <div className="w-3 h-3 rounded-full bg-accent"></div>
+      <Link to="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
+        <div className="h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_10px_#4ACA8C80]" />
         <div className="flex flex-col">
           <span className="font-bold text-[16px] leading-tight">SENTRY-IR</span>
           <span className="text-[12px] text-muted leading-tight">Mitigation Retrieval</span>
         </div>
       </Link>
       
-      <div className="flex items-center gap-6">
-        <Link to="/admin" className="text-sm font-semibold text-secondary hover:text-primary transition-colors">
+      <div className="flex items-center gap-4 sm:gap-6">
+        <Link to="/admin" className="text-sm font-semibold text-secondary transition-colors hover:text-primary">
           Knowledge Base
         </Link>
         <div className="flex items-center gap-2 border-l border-border pl-6">

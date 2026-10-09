@@ -17,9 +17,20 @@
 }
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
   body {
     @apply bg-background text-primary antialiased min-h-screen selection:bg-accent/30;
     font-family: var(--font-sans);
+    margin: 0;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
   }
 }
 
