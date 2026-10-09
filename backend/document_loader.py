@@ -5,6 +5,7 @@ Loads, validates, and chunks security runbooks and advisories for retrieval.
 
 import json
 import logging
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -20,6 +21,51 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("document_loader")
 
 DOCUMENTS_DIR = Path(__file__).parent / "data" / "documents"
+SECTION_HEADING = re.compile(
+    r"^#{1,6}\s+(?P<number>\d+(?:\.\d+)*)\s+"
+    r"\[(?P<phase>Immediate|Investigate|Recover)\]\s+(?P<title>.+?)\s*$",
+    re.IGNORECASE,
+)
+CITATION_SUFFIX = re.compile(r"\s+\(citation:\s*(?P<citation>.+?)\)\s*$", re.IGNORECASE)
+
+
+def split_sections(
+    content: str, doc_id: str, doc_title: str, techniques: List[str]
+) -> List[Dict[str, Any]]:
+    """Turn numbered Markdown section headings into searchable mitigation chunks."""
+    sections: List[Dict[str, Any]] = []
+    current: Optional[Dict[str, Any]] = None
+
+    for line in content.splitlines():
+        match = SECTION_HEADING.match(line.strip())
+        if match:
+            if current is not None:
+                current["description"] = "\n".join(current.pop("_lines")).strip()
+                sections.append(current)
+
+            title = match.group("title")
+            citation_match = CITATION_SUFFIX.search(title)
+            citation = citation_match.group("citation") if citation_match else None
+            if citation_match:
+                title = title[:citation_match.start()].rstrip()
+
+            section_number = match.group("number")
+            current = {
+                "id": f"{doc_id}-section-{section_number.replace('.', '-')}",
+                "phase": match.group("phase").title(),
+                "title": title,
+                "citation": citation or f"{doc_title} §{section_number}",
+                "techniques": techniques,
+                "_lines": [],
+            }
+        elif current is not None:
+            current["_lines"].append(line)
+
+    if current is not None:
+        current["description"] = "\n".join(current.pop("_lines")).strip()
+        sections.append(current)
+
+    return sections
 
 
 class Document:
@@ -28,15 +74,18 @@ class Document:
         self.title: str = raw.get("title", "")
         self.type: str = raw.get("type", "Runbook")
         self.version: str = raw.get("version", "v1.0")
-        self.updated: str = raw.get("updated", "")
+        self.updated: str = raw.get("date", raw.get("updated", ""))
         self.published: str = raw.get("published", "")
+        self.date: str = raw.get("date", self.updated)
         self.status: str = raw.get("status", "Indexed")
         self.flagged: bool = raw.get("flagged", False)
         self.owner: str = raw.get("owner", "SOC Team")
         self.techniques: List[str] = raw.get("techniques", [])
         self.summary: str = raw.get("summary", "")
         self.content: str = raw.get("content", "")
-        self.steps: List[Dict[str, Any]] = raw.get("steps", [])
+        self.steps: List[Dict[str, Any]] = split_sections(
+            self.content, self.id, self.title, self.techniques
+        ) or raw.get("steps", [])
 
     @property
     def chunk_count(self) -> int:

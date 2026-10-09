@@ -1,0 +1,14 @@
+{
+  "id": "IR-Runbook-Scheduled-Task-Persistence",
+  "title": "IR-Runbook-Scheduled-Task-Persistence",
+  "type": "Runbook",
+  "owner": "Endpoint Security Team",
+  "version": "v1.0",
+  "date": "Oct 9, 2026",
+  "updated": "Oct 9, 2026",
+  "published": "Oct 9, 2026",
+  "status": "Indexed",
+  "techniques": ["T1053.005"],
+  "summary": "Original short-response guidance for suspicious Windows scheduled tasks used for persistence.",
+  "content": "## 1.1 [Immediate] Preserve and contain the task\nRecord the task name, author, trigger, action, and creation time before disabling a task. Isolate the endpoint if its action launches confirmed malicious code.\n\n## 2.1 [Investigate] Validate task origin and execution\nInspect task XML, referenced binaries or scripts, creator account, and task-scheduler operational logs. Compare the action and trigger with the approved endpoint baseline.\n\n## 3.1 [Recover] Remove unauthorized persistence\nDisable and remove confirmed malicious tasks after evidence collection, quarantine their payloads, and rotate credentials used to create or run them."
+}

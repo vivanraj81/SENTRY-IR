@@ -1,0 +1,14 @@
+{
+  "id": "IR-Runbook-Brute-Force",
+  "title": "IR-Runbook-Brute-Force",
+  "type": "Runbook",
+  "owner": "Identity Security Team",
+  "version": "v1.0",
+  "date": "Oct 9, 2026",
+  "updated": "Oct 9, 2026",
+  "published": "Oct 9, 2026",
+  "status": "Indexed",
+  "techniques": ["T1110"],
+  "summary": "Original short-response guidance for password guessing and suspected account compromise.",
+  "content": "## 1.1 [Immediate] Protect the targeted account\nApply a temporary sign-in block or risk-based challenge when brute-force attempts are active, and preserve authentication logs before changing the account.\n\n## 2.1 [Investigate] Distinguish guessing from successful compromise\nReview failed and successful sign-ins, source addresses, MFA outcomes, and activity after authentication. Identify other accounts targeted from the same sources.\n\n## 3.1 [Recover] Reset credentials and revoke sessions\nReset credentials for confirmed exposed accounts, revoke active sessions, verify MFA methods, and remove unauthorized forwarding or access rules."
+}

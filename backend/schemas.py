@@ -34,7 +34,7 @@ class SearchResult(BaseModel):
 class SearchRequest(BaseModel):
     """Search request payload."""
     query: str = Field(..., min_length=1, description="Security alert or incident response query")
-    top_k: Optional[int] = Field(default=5, ge=1, le=20, description="Maximum number of mitigation results to return")
+    top_k: Optional[int] = Field(default=5, ge=1, le=5, description="Maximum number of mitigation results to return")
 
     @field_validator("query")
     @classmethod
