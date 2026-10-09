@@ -1,0 +1,12 @@
+[
+  {
+    "type": "escalation",
+    "createdAt": "2026-10-09T10:04:26.581556+00:00",
+    "data": {
+      "alert": "hi",
+      "technique": "",
+      "host": "",
+      "reason": "No mitigation found in the indexed knowledge base"
+    }
+  }
+]

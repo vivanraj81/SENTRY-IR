@@ -49,18 +49,20 @@ export default function SearchPage() {
           state: { rawAlert: inputText, entities: extracted },
         });
       } else {
-        const [retrieved, documents] = await Promise.all([
+        const [entities, retrieved, documents] = await Promise.all([
+          parseAlert(inputText.trim()),
           retrieveMitigation({ question: inputText.trim() }),
           getDocuments(),
         ]);
         navigate('/results', {
           state: {
             retrieval: normalizeRetrieval(retrieved, documents),
+            documents,
             alertId: `alert-${Date.now()}`,
             alert: {
-              ...retrieved.alert,
-              detection: inputText.trim(),
-              timestamp: '',
+              ...entities,
+              detection: entities.detection || inputText.trim(),
+              query: inputText.trim(),
             },
           },
         });
