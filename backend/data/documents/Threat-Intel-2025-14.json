@@ -2,50 +2,13 @@
   "id": "Threat-Intel-2025-14",
   "title": "Threat-Intel-2025-14",
   "type": "Threat Intel",
+  "owner": "Threat Intel Team",
   "version": "v1.0",
+  "date": "Feb 2, 2026",
   "updated": "Feb 2, 2026",
   "published": "Feb 2, 2026",
   "status": "Indexed",
-  "owner": "Threat Intel Team",
   "techniques": ["T1003.001", "T1218.011", "T1059.001"],
-  "summary": "Threat intelligence advisory tracking adversary abuse of LOLBins (rundll32.exe, certutil.exe) for memory dumping and in-memory payload staging.",
-  "content": "Recent campaigns show adversaries using custom tooling and LOLBins (such as rundll32.exe executing comsvcs.dll) to access and dump LSASS memory.\n\nAnalysts should filter for System Event ID 10 targeting lsass.exe within the last 24 hours to identify the source process and access mask.\n\nCross-reference running processes and loaded modules against known credential-dumping tool hashes. Inspect network egress connections originating from system binaries.",
-  "steps": [
-    {
-      "id": "ti-step-1",
-      "phase": "IMMEDIATE — DO NOW",
-      "title": "Kill rogue child processes spawned from LOLBins",
-      "description": "Terminate rogue instances of rundll32.exe, certutil.exe, or mshta.exe executing suspicious in-memory script payloads or unauthorized DLL exports.",
-      "citation": "Threat-Intel-2025-14 p.2",
-      "techniques": ["T1218.011", "T1059"],
-      "keywords": ["rundll32", "lolbins", "terminate", "kill", "process", "certutil", "mshta", "lsass"]
-    },
-    {
-      "id": "ti-step-2",
-      "phase": "INVESTIGATE",
-      "title": "Inspect Sysmon Event ID 10 and DLL access masks for rundll32",
-      "description": "Examine process handles targeting lsass.exe created by rundll32.exe and verify whether MiniDumpWriteDump was invoked via comsvcs.dll.",
-      "citation": "Threat-Intel-2025-14 p.4",
-      "techniques": ["T1003.001", "T1218.011"],
-      "keywords": ["sysmon", "event id 10", "comsvcs", "minidumpwritedump", "rundll32.exe", "access mask"]
-    },
-    {
-      "id": "ti-step-3",
-      "phase": "INVESTIGATE",
-      "title": "Cross-reference running processes with known T1003.001 hashes",
-      "description": "Compare active process memory images and loaded unsigned modules against threat intelligence hashes associated with recent credential dumping toolkits.",
-      "citation": "Threat-Intel-2025-14 p.6",
-      "techniques": ["T1003.001"],
-      "keywords": ["hashes", "tooling", "signatures", "t1003.001", "modules", "credential dumping"]
-    },
-    {
-      "id": "ti-step-4",
-      "phase": "RECOVER",
-      "title": "Enforce AppLocker / WDAC script-execution policies",
-      "description": "Strengthen application control policies to restrict unsigned DLL invocation via rundll32 and block unauthorized scripts in user-writable directories.",
-      "citation": "Threat-Intel-2025-14 p.8",
-      "techniques": ["T1218.011", "M1038"],
-      "keywords": ["applocker", "wdac", "policy", "execution", "hardening", "rundll32"]
-    }
-  ]
+  "summary": "Original summary of LSASS-access telemetry and credential-tool indicators used to support incident triage.",
+  "content": "## 4.1 [Investigate] Review process access to LSASS (citation: Threat-Intel-2025-14 p.4)\nReview Sysmon Event ID 10 events targeting lsass.exe. Record the source process, access mask, user, and timestamp, then compare the activity with expected administrative tooling.\n\n## 6.1 [Investigate] Compare credential-tool signatures (citation: Threat-Intel-2025-14 p.6)\nValidate file hashes and loaded-module signatures against approved intelligence for credential-dumping tools. Treat unsigned or unexpected modules as leads for corroboration, not as standalone proof."
 }

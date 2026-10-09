@@ -137,22 +137,13 @@ class TestSearchEngine(unittest.TestCase):
         self.assertTrue(len(top_result["citation"]) > 0)
         self.assertIn("isolate", top_result["title"].lower())
 
-    def test_scenario_3_dns_tunneling(self):
-        """TEST 3 — DNS Tunneling"""
-        query = "High volume of suspicious DNS TXT queries suggests DNS tunneling."
+    def test_scenario_3_dns_demo_alert_returns_no_result(self):
+        """DNS tunneling is intentionally outside the sample knowledge base."""
+        query = "Anomalous DNS tunneling over port 53"
         result = self.engine.search(query)
 
-        self.assertEqual(result["status"], "success")
-        self.assertGreater(result["total_matches"], 0)
-
-        # Technique detected / boosted: T1071.004
-        self.assertEqual(result["entities"]["technique"], "T1071.004")
-
-        # Top result from DNS tunneling playbook
-        top_result = result["results"][0]
-        self.assertEqual(top_result["document_id"], "IR-Playbook-DNS-Tunneling")
-        self.assertIn("T1071.004", top_result["techniques"])
-        self.assertTrue(len(top_result["citation"]) > 0)
+        self.assertEqual(result["status"], "no_result")
+        self.assertEqual(result["results"], [])
 
     def test_scenario_4_phishing(self):
         """TEST 4 — Phishing with OAuth session revocation"""
@@ -263,7 +254,7 @@ def run_all_tests():
     test_cases = [
         ("Credential Dumping", "Suspicious LSASS access detected on HOST-042 using mimikatz. Possible credential dumping."),
         ("Ransomware", "Ransomware has encrypted files on the affected workstation. How should I contain the host?"),
-        ("DNS Tunneling", "High volume of suspicious DNS TXT queries suggests DNS tunneling."),
+        ("DNS demo alert", "Anomalous DNS tunneling over port 53"),
         ("Phishing", "A phishing email caused a user to click a malicious link. Revoke the compromised OAuth session."),
         ("Explicit MITRE ID", "T1003.001 LSASS credential dumping"),
         ("Negative Query", "What is the capital of France?"),

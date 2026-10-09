@@ -1,0 +1,14 @@
+{
+  "id": "IR-Runbook-Malicious-PowerShell",
+  "title": "IR-Runbook-Malicious-PowerShell",
+  "type": "Runbook",
+  "owner": "SOC Operations",
+  "version": "v1.0",
+  "date": "Oct 9, 2026",
+  "updated": "Oct 9, 2026",
+  "published": "Oct 9, 2026",
+  "status": "Indexed",
+  "techniques": ["T1059.001"],
+  "summary": "Original short-response guidance for investigating encoded PowerShell execution.",
+  "content": "## 1.1 [Immediate] Contain the suspicious PowerShell process\nCapture the command line and process tree, then isolate the endpoint if execution is active or linked to other malicious activity. Preserve evidence before stopping the process.\n\n## 2.1 [Investigate] Decode and validate the command safely\nReview PowerShell operational and script-block logs. Decode encoded content only in an isolated analysis environment and correlate parent process, user, and network indicators.\n\n## 3.1 [Recover] Remove persistence and restore trusted execution\nRemove confirmed malicious artifacts, rotate exposed credentials, and apply signed-script or application-control policy before returning the endpoint to service."
+}
