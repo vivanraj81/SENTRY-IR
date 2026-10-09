@@ -62,8 +62,13 @@ export default function ConfirmPage() {
       navigate('/results', {
         state: {
           retrieval: normalizeRetrieval(retrieved, documents),
+          documents,
           alertId: `alert-${Date.now()}`,
-          alert: { ...retrieved.alert, ...entities },
+          alert: {
+            ...entities,
+            detection: entities.detection || entities.rule || '',
+            query: state.rawAlert,
+          },
         },
       });
     } catch (requestError) {

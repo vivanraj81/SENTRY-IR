@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Clock3, SearchCheck, ShieldCheck, ThumbsUp, RotateCcw } from 'lucide-react';
+import { Clock3, SearchCheck, ShieldCheck, ThumbsUp, RotateCcw } from 'lucide-react';
 import AlertBanner from '../components/AlertBanner';
 import StepCard from '../components/StepCard';
 import Button from '../components/Button';
 import StatusChip from '../components/StatusChip';
+import EvidenceViewer from '../components/EvidenceViewer';
+import ConflictWarning from '../components/ConflictWarning';
+import NoResultPage from './NoResultPage';
 import { sendFeedback } from '../api';
 
 const PHASES = [
@@ -21,7 +24,8 @@ export default function ResultsPage() {
   const [feedback, setFeedback] = useState('');
   const [feedbackError, setFeedbackError] = useState('');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-  const sourceDocuments = retrieval?.sourceDocuments || [];
+  const [citation, setCitation] = useState(null);
+  const sourceDocuments = state?.documents || [];
 
   if (!retrieval) {
     return (
@@ -36,6 +40,14 @@ export default function ResultsPage() {
   const technique = alert.technique || alert.techniqueId || '';
   const techniqueName = alert.techniqueName || '';
   const stepCount = retrieval.steps.length;
+  const displayOrder = new Map(
+    PHASES.flatMap((phase) => retrieval.steps.filter((step) => step.phase === phase.id))
+      .map((step, index) => [step, index + 1]),
+  );
+
+  if (stepCount === 0) {
+    return <NoResultPage alert={alert} />;
+  }
 
   async function handleFeedback(helpful) {
     setFeedbackError('');
@@ -53,7 +65,7 @@ export default function ResultsPage() {
   return (
     <div className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-6 lg:px-8">
       <AlertBanner
-        title={alert.detection || alert.rule || alert.alert || 'Incident response query'}
+        title={alert.detection || alert.rule || alert.alert || alert.query || 'Incident response query'}
         severity={alert.severity || 'Low'}
         metadata={{
           host: alert.host || '—',
@@ -63,21 +75,10 @@ export default function ResultsPage() {
         tag={[technique, techniqueName].filter(Boolean).join(' · ') || 'Technique not identified'}
       />
 
-      {retrieval.conflicts.length > 0 && (
-        <div className="mb-5 flex items-center gap-2 rounded-md border border-warning/25 bg-warning/10 px-4 py-2.5 text-sm text-warning">
-          <AlertTriangle size={16} /> Conflicting guidance found
-        </div>
-      )}
+      <ConflictWarning conflicts={retrieval.conflicts} documents={sourceDocuments} />
 
-      {stepCount === 0 ? (
-        <div className="rounded-xl border border-border bg-panel px-6 py-12 text-center">
-          <h2 className="mb-2 text-lg font-semibold">No mitigation found for this alert</h2>
-          <p className="mb-6 text-sm text-secondary">Try a different alert or question to search the indexed guidance.</p>
-          <Button onClick={() => navigate('/')}>Try Another Search</Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <section aria-label="Mitigation steps" className="min-w-0">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section aria-label="Mitigation steps" className="min-w-0">
             {PHASES.map((phase) => {
               const steps = retrieval.steps.filter((step) => step.phase === phase.id);
               if (!steps.length) return null;
@@ -94,15 +95,15 @@ export default function ResultsPage() {
                       <StepCard
                         key={`${step.citation.docId}-${step.order}-${step.title}`}
                         step={step}
-                        number={step.order}
-                        onOpenCitation={() => {}}
+                        number={displayOrder.get(step)}
+                        onOpenCitation={setCitation}
                       />
                     ))}
                   </div>
                 </div>
               );
             })}
-          </section>
+        </section>
 
           <aside className="flex flex-col gap-4">
             <section className="rounded-xl border border-border bg-panel p-5">
@@ -117,7 +118,7 @@ export default function ResultsPage() {
                 </SummaryRow>
                 <SummaryRow label="RETRIEVAL TIME">
                   <span className="inline-flex items-center gap-1.5 font-mono text-[13px] text-primary">
-                    <Clock3 size={14} className="text-muted" /> {retrieval.retrievalSeconds.toFixed(3)}s
+                    <Clock3 size={14} className="text-muted" /> {Number(retrieval.retrievalSeconds || 0).toFixed(3)}s
                   </span>
                 </SummaryRow>
               </dl>
@@ -125,9 +126,9 @@ export default function ResultsPage() {
 
             <section className="rounded-xl border border-border bg-panel p-5">
               <h2 className="mb-4 text-xs font-bold tracking-[0.14em] text-muted">SOURCE DOCUMENTS</h2>
-              {sourceDocuments.length ? (
+              {retrieval.sourceDocuments?.length ? (
                 <ul className="space-y-3">
-                  {sourceDocuments.map((document) => (
+                  {retrieval.sourceDocuments.map((document) => (
                     <li key={document.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                       <p className="break-words text-sm font-semibold text-primary">{document.name}</p>
                       <p className="mt-1 text-xs text-secondary">
@@ -154,9 +155,9 @@ export default function ResultsPage() {
               )}
               {feedbackError && <p role="alert" className="mt-3 text-xs text-critical">{feedbackError}</p>}
             </section>
-          </aside>
-        </div>
-      )}
+        </aside>
+      </div>
+      {citation && <EvidenceViewer citation={citation} onClose={() => setCitation(null)} />}
     </div>
   );
 }
