@@ -52,6 +52,7 @@ def split_sections(
             section_number = match.group("number")
             current = {
                 "id": f"{doc_id}-section-{section_number.replace('.', '-')}",
+                "section": section_number,
                 "phase": match.group("phase").title(),
                 "title": title,
                 "citation": citation or f"{doc_title} §{section_number}",
@@ -108,6 +109,19 @@ class Document:
             "summary": self.summary,
         }
 
+    def to_api_summary_dict(self) -> Dict[str, Any]:
+        """Return the document-list contract used by the mitigation API."""
+        return {
+            "id": self.id,
+            "name": self.title,
+            "type": self.type,
+            "chunks": self.chunk_count,
+            "status": self.status,
+            "version": self.version,
+            "date": self.date,
+            "owner": self.owner,
+        }
+
     def to_detail_dict(self) -> Dict[str, Any]:
         """Full document details including content for DocumentDetailPage."""
         d = self.to_summary_dict()
@@ -123,6 +137,10 @@ class MitigationChunk:
         self.doc_title: str = parent_doc.title
         self.doc_type: str = parent_doc.type
         self.doc_version: str = parent_doc.version
+        self.doc_date: str = parent_doc.date
+        self.doc_owner: str = parent_doc.owner
+        self.doc_flagged: bool = parent_doc.flagged
+        self.section: str = step.get("section", self._section_from_citation(step.get("citation", "")))
         self.phase: str = step.get("phase", "INVESTIGATE")
         self.title: str = step.get("title", "")
         self.description: str = step.get("description", "")
@@ -133,6 +151,11 @@ class MitigationChunk:
         # Searchable corpus representation combining title, description, and keywords
         search_tokens = [self.title, self.description] + self.keywords + self.techniques + [self.phase]
         self.searchable_text = " ".join(search_tokens).lower()
+
+    @staticmethod
+    def _section_from_citation(citation: str) -> str:
+        match = re.search(r"§\s*(\d+(?:\.\d+)*)", citation)
+        return match.group(1) if match else ""
 
     def to_step_card_dict(self) -> Dict[str, Any]:
         """Output format matching the React StepCard component expectations."""
