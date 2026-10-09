@@ -19,7 +19,7 @@ from backend.entity_extractor import extract_entities
 DEFAULT_RELEVANCE_THRESHOLD = 0.2
 EXACT_TECHNIQUE_BOOST = 0.2
 BASE_TECHNIQUE_BOOST = 0.1
-MAX_RESULTS = 5
+STALE_DOCUMENT_PENALTY = 0.25
 PHASES = ("Immediate", "Investigate", "Recover")
 
 
@@ -96,15 +96,18 @@ class SearchEngine:
             score = min(
                 1.0,
                 float(similarities[index])
-                + self._technique_boost(chunk, query_techniques),
+                + self._technique_boost(chunk, query_techniques)
             )
             if score >= limit:
-                scored.append((chunk, score))
+                rank_score = score - (
+                    STALE_DOCUMENT_PENALTY if chunk.doc_flagged else 0.0
+                )
+                scored.append((chunk, score, rank_score))
 
         phase_order = {phase.upper(): index for index, phase in enumerate(PHASES)}
         scored.sort(
             key=lambda item: (
-                -item[1],
+                -item[2],
                 phase_order.get(item[0].phase.upper(), len(PHASES)),
             )
         )
@@ -119,11 +122,12 @@ class SearchEngine:
                 "document_id": chunk.doc_id,
                 "doc_id": chunk.doc_id,
                 "doc_title": chunk.doc_title,
+                "section": chunk.section,
                 "citation": chunk.citation,
                 "techniques": chunk.techniques,
                 "score": round(score, 4),
             }
-            for chunk, score in scored[: min(MAX_RESULTS, max(0, top_k))]
+            for chunk, score, _ in scored[: max(0, top_k)]
         ]
 
         elapsed_ms = round((time.perf_counter() - started) * 1000, 2)

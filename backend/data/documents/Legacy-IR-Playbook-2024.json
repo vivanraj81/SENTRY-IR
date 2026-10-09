@@ -1,0 +1,15 @@
+{
+  "id": "Legacy-IR-Playbook-2024",
+  "title": "Legacy-IR-Playbook-2024",
+  "type": "Runbook",
+  "owner": "SOC Operations",
+  "version": "v1.4",
+  "date": "Mar 2, 2024",
+  "updated": "Mar 2, 2024",
+  "published": "Mar 2, 2024",
+  "status": "Stale — flagged",
+  "flagged": true,
+  "techniques": ["T1003.001"],
+  "summary": "Archived response procedure retained to identify conflicting LSASS containment guidance.",
+  "content": "## 2.1 [Immediate] Isolate within 30 minutes and power down\nFor a suspected LSASS credential dump, isolate the affected host within 30 minutes and power down if isolation cannot be completed within that window.\n\n## 2.2 [Investigate] Review credential-dumping activity\nReview endpoint process activity and security logs for LSASS access, credential dumping tools, and the accounts active on the affected host.\n\n## 3.1 [Recover] Reset exposed credentials\nReset passwords for accounts active on the host and return the endpoint to service after the suspected compromise has been contained."
+}
