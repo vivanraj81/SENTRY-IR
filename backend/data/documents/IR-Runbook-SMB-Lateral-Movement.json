@@ -1,0 +1,14 @@
+{
+  "id": "IR-Runbook-SMB-Lateral-Movement",
+  "title": "IR-Runbook-SMB-Lateral-Movement",
+  "type": "Runbook",
+  "owner": "Network Security Operations",
+  "version": "v1.0",
+  "date": "Oct 9, 2026",
+  "updated": "Oct 9, 2026",
+  "published": "Oct 9, 2026",
+  "status": "Indexed",
+  "techniques": ["T1021.002"],
+  "summary": "Original short-response guidance for suspicious SMB lateral movement and rare outbound peers.",
+  "content": "## 1.1 [Immediate] Restrict suspicious SMB connections\nBlock confirmed malicious external peers and limit SMB access to approved internal management paths. Isolate a host only when the surrounding evidence indicates compromise.\n\n## 2.1 [Investigate] Trace SMB sessions and authentication\nCorrelate firewall flow records, SMB share access, logon events, source and destination addresses, and account activity to identify the initiating host and accessed shares.\n\n## 3.1 [Recover] Revoke exposed access and restore least privilege\nDisable or rotate confirmed compromised accounts, remove unauthorized shares or scheduled access, and restore SMB rules to the approved baseline."
+}

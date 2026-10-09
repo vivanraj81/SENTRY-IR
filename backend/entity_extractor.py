@@ -32,6 +32,10 @@ KNOWN_PROCESSES = [
 CONCEPT_TECHNIQUE_MAPPINGS = [
     (r"\b(?:lsass\s+access|lsass\s+memory|mimikatz|comsvcs|minidump|procdump|nanodump)\b", "T1003.001"),
     (r"\b(?:credential\s+dumping|credential\s+theft|os\s+credential|ntds\.dit|krbtgt)\b", "T1003"),
+    (r"\b(?:encoded\s+powershell|powershell\s+encoded|encoded\s+command)\b", "T1059.001"),
+    (r"\b(?:outbound\s+smb|smb\s+to\s+(?:a\s+)?rare\s+ip|smb\s+admin\s+share)\b", "T1021.002"),
+    (r"\b(?:brute\s+force|account\s+compromise|password\s+spray(?:ing)?)\b", "T1110"),
+    (r"\b(?:scheduled\s+task|task\s+scheduler|schtasks(?:\.exe)?)\b", "T1053.005"),
     (r"\b(?:dns\s+tunneling|txt\s+record|txt\s+queries|high-entropy\s+dns|dns\s+c2)\b", "T1071.004"),
     (r"\b(?:dns\s+exfiltration|exfiltration\s+over\s+dns)\b", "T1048.003"),
     (r"\b(?:vssadmin|shadow\s*copy|recoveryenabled|bcdedit)\b", "T1490"),
