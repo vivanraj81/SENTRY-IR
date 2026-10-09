@@ -9,10 +9,10 @@ import re
 import sys
 import time
 import uuid
-from zipfile import BadZipFile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zipfile import BadZipFile
 
 # Ensure repository root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent

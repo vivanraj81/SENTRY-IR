@@ -142,6 +142,21 @@ def test_retrieve_returns_contract_steps_and_sources():
     assert result["confidence"] in {"High", "Medium", "Low"}
 
 
+def test_retrieve_groups_results_and_reports_sources():
+    response = client.post(
+        "/api/retrieve",
+        json={"rule": "Suspicious LSASS Access", "host": "HOST-042"},
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    phases = {step["phase"] for step in result["steps"]}
+    assert phases.intersection({"Immediate", "Investigate", "Recover"})
+    assert result["conflicts"]
+    assert result["retrievalSeconds"] >= 0
+    assert "IR-Runbook-Credential-Theft" in result["sourcesMatched"]
+
+
 def test_lsass_retrieve_reports_legacy_conflict_and_flags_old_document():
     response = client.post(
         "/api/retrieve",
